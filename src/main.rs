@@ -7,7 +7,7 @@ use ratatui::{
     layout::{self, Constraint, Layout},
     prelude::{CrosstermBackend, Terminal},
     style::{Style, Stylize},
-    text::Line,
+    text::{Line, Span},
     widgets::{List, ListState},
     Frame,
 };
@@ -78,7 +78,7 @@ impl FeedListFormAction {
         );
 
         let list = List::new([
-                Line::raw("   1     (0/37) Newsboat"),
+                Line::default().spans([Span::raw("   1     (0/37) "), Span::styled("Newsboat", Style::default().light_red())]),
                 Line::styled("   2 N  (2/902) xkcd.com", Style::default().bold()),
                 Line::raw("   3     (0/11) Software Defeined Radio with HackRF"),
                 Line::raw("   4     (0/23) Debiania"),
