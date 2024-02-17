@@ -25,8 +25,21 @@ fn main() -> Result<()> {
         terminal.draw(|f| feed_list.draw(f))?;
         if event::poll(std::time::Duration::from_millis(16))? {
             if let event::Event::Key(key) = event::read()? {
-                if key.kind == KeyEventKind::Press && key.code == KeyCode::Char('q') {
-                    break;
+                if feed_list.cmdline_state.is_some() {
+                    if key.kind == KeyEventKind::Press && key.code == KeyCode::Esc {
+                        feed_list.cmdline_state = None;
+                    }
+                    match (key.kind, key.code) {
+                        (KeyEventKind::Press, KeyCode::Char(c)) => feed_list.cmdline_state.as_mut().unwrap().push(c),
+                        _ => (),
+                    };
+                } else {
+                    if key.kind == KeyEventKind::Press && key.code == KeyCode::Char('q') {
+                        break;
+                    }
+                    if key.kind == KeyEventKind::Press && key.code == KeyCode::Char(':') {
+                        feed_list.cmdline_state = Some(":".to_owned());
+                    }
                 }
                 if key.kind == KeyEventKind::Press && key.code == KeyCode::Up {
                     if let Some(index) = feed_list.list_state.selected() {
@@ -51,12 +64,14 @@ fn main() -> Result<()> {
 
 struct FeedListFormAction {
     list_state: ListState,
+    cmdline_state: Option<String>,
 }
 
 impl FeedListFormAction {
     fn new() -> Self {
         Self {
-            list_state: ListState::default().with_selected(Some(1))
+            list_state: ListState::default().with_selected(Some(1)),
+            cmdline_state: None,
         }
     }
 
@@ -118,6 +133,8 @@ impl FeedListFormAction {
             layout[2],
         );
 
-        frame.render_widget(Line::raw(":"), layout[3]);
+        if let Some(cmdline) = &self.cmdline_state {
+            frame.render_widget(Line::raw(cmdline), layout[3]);
+        }
     }
 }
