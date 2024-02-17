@@ -8,7 +8,7 @@ use ratatui::{
     prelude::{CrosstermBackend, Terminal},
     style::{Style, Stylize},
     text::Line,
-    widgets::Paragraph,
+    widgets::{List, ListState},
     Frame,
 };
 use std::io::{stdout, Result};
@@ -19,7 +19,7 @@ fn main() -> Result<()> {
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
     terminal.clear()?;
 
-    let feed_list = FeedListFormAction::new();
+    let mut feed_list = FeedListFormAction::new();
 
     loop {
         terminal.draw(|f| feed_list.draw(f))?;
@@ -27,6 +27,18 @@ fn main() -> Result<()> {
             if let event::Event::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Press && key.code == KeyCode::Char('q') {
                     break;
+                }
+                if key.kind == KeyEventKind::Press && key.code == KeyCode::Up {
+                    if let Some(index) = feed_list.list_state.selected() {
+                        if index > 0 {
+                            feed_list.list_state.select(Some(index - 1))
+                        }
+                    };
+                }
+                if key.kind == KeyEventKind::Press && key.code == KeyCode::Down {
+                    if let Some(index) = feed_list.list_state.selected() {
+                        feed_list.list_state.select(Some(index + 1))
+                    };
                 }
             }
         }
@@ -37,14 +49,18 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-struct FeedListFormAction {}
+struct FeedListFormAction {
+    list_state: ListState,
+}
 
 impl FeedListFormAction {
     fn new() -> Self {
-        Self {}
+        Self {
+            list_state: ListState::default().with_selected(Some(1))
+        }
     }
 
-    fn draw(&self, frame: &mut Frame) {
+    fn draw(&mut self, frame: &mut Frame) {
         let layout = Layout::default()
             .direction(layout::Direction::Vertical)
             .constraints(vec![
@@ -61,11 +77,19 @@ impl FeedListFormAction {
             layout[0],
         );
 
-        frame.render_widget(
-            Paragraph::new("Hello Ratatui! (press 'q' to quit)")
-                .white()
-                .on_black(),
+        let list = List::new([
+                Line::raw("   1     (0/37) Newsboat"),
+                Line::styled("   2 N  (2/902) xkcd.com", Style::default().bold()),
+                Line::raw("   3     (0/11) Software Defeined Radio with HackRF"),
+                Line::raw("   4     (0/23) Debiania"),
+                Line::raw("   5    (0/190) Ctrl blog"),
+            ])
+            .highlight_style(Style::default().yellow().on_blue().bold());
+
+        frame.render_stateful_widget(
+            list,
             layout[1],
+            &mut self.list_state,
         );
 
         let bindings = vec![
@@ -82,12 +106,9 @@ impl FeedListFormAction {
 
         let bindings: Vec<_> = bindings
             .iter()
-            .flat_map(|(key, action)| [
-                    key.yellow().bold(),
-                    ":".white(),
-                    action.gray(),
-                    " ".white(),
-                ].into_iter())
+            .flat_map(|(key, action)| {
+                [key.yellow().bold(), ":".white(), action.gray(), " ".white()].into_iter()
+            })
             .collect();
 
         frame.render_widget(
