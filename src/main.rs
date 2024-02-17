@@ -29,6 +29,9 @@ fn main() -> Result<()> {
                     if key.kind == KeyEventKind::Press && key.code == KeyCode::Esc {
                         feed_list.cmdline_state = None;
                     }
+                    if key.kind == KeyEventKind::Press && key.code == KeyCode::Enter {
+                        feed_list.cmdline_state = None;
+                    }
                     match (key.kind, key.code) {
                         (KeyEventKind::Press, KeyCode::Char(c)) => feed_list.cmdline_state.as_mut().unwrap().push(c),
                         _ => (),
@@ -135,6 +138,9 @@ impl FeedListFormAction {
 
         if let Some(cmdline) = &self.cmdline_state {
             frame.render_widget(Line::raw(cmdline), layout[3]);
+            // TODO: Take actual with instead of number of characters (currently, this breaks for
+            // multi-codepoint characters and wide characters)
+            frame.set_cursor(layout[3].x + cmdline.len() as u16, layout[3].y)
         }
     }
 }
